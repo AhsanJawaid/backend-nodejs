@@ -52,6 +52,159 @@ app.get('/users', (req, res) => {
     });
 });
 
+app.get('/users/:id', (req, res) => {
+  const userId = parseInt(req.params.id);
+  const user = data.find(item => item.id === userId);
+
+  if (!user) {
+    return res.status(404).json({ 
+      message: 'User not found',
+      error: 'No user with the given ID'
+    });
+  }
+
+  res.json({ 
+    user: user
+  });
+});
+
+// - ADD NEW USER
+app.post('/add-user', (req, res) => {
+  try{
+    const {name, email} = req.body;
+    // validate request fields
+    if(!name || !email) {
+      return res.status(400).json({ 
+        message: 'Name and email are required fields.',
+        error: 'Missing required fields'
+      });
+    }
+
+    const newUser = {
+      id: data.length + 1,
+      name: name,
+      email: email
+    };
+
+    //Add data to array
+    data.push(newUser);
+
+    res.status(201).json({ 
+      message: 'User added successfully',
+      user: newUser,
+      totalUsers: data.length
+    });
+  } catch (error) {
+    console.error('Error adding user:', error);
+    res.status(500).json({ 
+      message: 'Error adding user',
+      error: error.message
+    });
+  }
+});
+
+// - UPDATE USER (PUT)
+app.put('/update-user/:id', (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { name, email } = req.body;
+
+    // Find user by ID
+    const userIndex = data.findIndex(user => user.id === userId);
+
+    if (userIndex === -1) {
+      return res.status(404).json({ 
+        message: 'User not found',
+        error: 'No user with the given ID'
+      });
+    }
+
+    if (!name || !email) {
+      return res.status(400).json({ 
+        message: "PUT requires all fields (name and email)",
+        error: "Missing required fields for complete resource replacement",
+        note: "PUT replaces the entire resource, so all fields are required"
+      });
+    }
+
+    // replace user data
+    const updatedUser = {
+      id: userId,
+      name: name,
+      email: email
+    };
+
+    data[userIndex] = updatedUser;
+    res.json({ 
+      message: "User completely replaced (PUT)",
+      updatedUser: updatedUser,
+      note: "PUT replaced the entire resource with new data"
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ 
+      message: 'Error updating user',
+      error: error.message
+    });
+  }
+});
+
+// - PATCH USER (PATCH)
+app.patch('/update-user/:id', (req, res) => {
+  try {
+    const userId = parseInt(req.params.id);
+    const { name, email } = req.body;
+
+    // Find user by ID
+    const userIndex = data.findIndex(user => user.id === userId);
+
+    if (userIndex === -1) {
+      return res.status(404).json({ 
+        message: 'User not found',
+        error: 'No user with the given ID'
+      });
+    }
+
+    if (!name && !email) {
+      return res.status(400).json({
+        message: "PATCH requires at least one field to update",
+        error: "No fields provided for update",
+        note: "PATCH allows partial updates, so at least one field should be provided"
+      });
+    }
+
+    // Update only provided fields
+    if (name) data[userIndex].name = name;
+    if (email) data[userIndex].email = email;
+
+    // Get current user data
+    // const currentUser = data[userIndex];
+    
+    // const updatedUser = {
+    //   ...currentUser,
+    //   ...(name && { name: name }),
+    //   ...(email && { email: email })
+    // };
+
+    // data[userIndex] = updatedUser;
+
+    res.json({ 
+      message: "User partially updated (PATCH)",
+      updatedUser: data[userIndex],
+      changes: {
+        name: name ? `Changed from "${currentUser.name}" to "${name}"` : "No change",
+        email: email ? `Changed from "${currentUser.email}" to "${email}"` : "No change"
+      },
+    });
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ 
+      message: 'Error updating user',
+      error: error.message
+    });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
